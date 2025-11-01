@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>给你的小惊喜</title>
+  <style>
+    :root{
+      --bg1:#ffdde1;
+      --bg2:#ee9ca7;
+      --card-shadow: 0 10px 25px rgba(0,0,0,.12);
+    }
+    html,body{
+      margin:0; padding:0; height:100%; overflow:hidden; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Noto Sans","PingFang SC","Microsoft YaHei",sans-serif;
+      background: radial-gradient(1200px 700px at 20% 10%, #fff8f8 0%, #ffeef1 45%, #ffe1e7 100%),
+                  linear-gradient(120deg, var(--bg1), var(--bg2));
+      background-blend-mode: screen, multiply;
+    }
+    .wrap{
+      position:relative; width:100%; height:100%;
+    }
+    .toolbar{
+      position: fixed; right: 12px; bottom: 12px; display:flex; gap:10px; z-index: 2000;
+    }
+    .btn{
+      border: none; outline: none; padding: 10px 14px; border-radius: 12px; font-size: 14px; cursor: pointer;
+      background: rgba(255,255,255,.85); box-shadow: var(--card-shadow); backdrop-filter: blur(4px);
+      transition: transform .15s ease;
+    }
+    .btn:active{ transform: scale(.96); }
+    .counter{
+      position: fixed; left: 12px; bottom: 12px; background: rgba(255,255,255,.8);
+      padding: 8px 12px; border-radius: 12px; box-shadow: var(--card-shadow); font-size: 13px; z-index: 2000;
+    }
+    .center{
+      position:absolute; inset:0; display:grid; place-items:center; padding: 24px; text-align:center;
+    }
+    .card{
+      display:inline-block; padding: 14px 16px; border-radius: 14px; box-shadow: var(--card-shadow);
+      background: #fff; color:#333; max-width: 260px; font-size: 15px; line-height: 1.3; user-select:none;
+      position:absolute; z-index: 1000; opacity: 0; transform: translateY(20px) rotate(var(--rot,0deg));
+      animation: floatIn .7s ease forwards;
+      border: 2px solid rgba(0,0,0,.03);
+    }
+    .card.small{ font-size: 14px; padding: 10px 12px; }
+    .badge{
+      position:absolute; top:-8px; left:-8px; background: var(--badge, #ffd1dc);
+      color:#333; font-size: 12px; padding: 4px 8px; border-radius: 999px; box-shadow: var(--card-shadow);
+    }
+    @keyframes floatIn {
+      from { opacity: 0; transform: translateY(24px) scale(.96) rotate(var(--rot,0deg)); }
+      to   { opacity: 1; transform: translateY(0) scale(1) rotate(var(--rot,0deg)); }
+    }
+    @keyframes fadeOut {
+      to { opacity: 0; transform: translateY(-10px) scale(.98) rotate(var(--rot,0deg)); }
+    }
+    .heart{
+      position:absolute; width: 12px; height:12px; transform: rotate(45deg); background:#ff5d8f; opacity:.9;
+      animation: pop .8s ease forwards;
+    }
+    .heart::before,.heart::after{
+      content:""; position:absolute; width:12px; height:12px; border-radius:50%; background:inherit;
+    }
+    .heart::before{ left:-6px; top:0; }
+    .heart::after{ top:-6px; left:0; }
+    @keyframes pop{
+      0%{ transform: translate(-50%,-50%) rotate(45deg) scale(.8); opacity: .9; }
+      70%{ transform: translate(-50%,-60%) rotate(45deg) scale(1.2); opacity: .9; }
+      100%{ transform: translate(-50%,-80%) rotate(45deg) scale(.2); opacity: 0; }
+    }
+    .start{
+      display:flex; flex-direction:column; gap:14px; align-items:center; background: rgba(255,255,255,.6);
+      padding: 24px 22px; border-radius: 16px; box-shadow: var(--card-shadow);
+      backdrop-filter: blur(6px);
+      max-width: 520px;
+    }
+    .start h1{ margin:0; font-size: 24px; letter-spacing:.5px; }
+    .start p{ margin:0; color:#444; }
+    .start .btn{ font-size:16px; padding: 12px 18px; }
+    .brand{
+      position: fixed; top:10px; left:12px; font-size: 12px; color: rgba(0,0,0,.55);
+      background: rgba(255,255,255,.5); padding: 6px 10px; border-radius: 10px; box-shadow: var(--card-shadow);
+    }
+    @media (max-width:480px){
+      .card{ max-width: 70vw; }
+      .start h1{ font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <div class="brand">❤️ 专属小惊喜</div>
+  <div class="center" id="intro">
+    <div class="start">
+      <h1>给你的小甜蜜</h1>
+      <p>点一下下面的按钮，随机的情话会在屏幕上飘出来～</p>
+      <button class="btn" id="startBtn">开始</button>
+      <p style="font-size:12px;">（手机也可以打开；再次点击“暂停/继续”可控制）</p>
+    </div>
+  </div>
+  <div class="counter" id="counter">已出现 0 条情话</div>
+  <div class="toolbar">
+    <button class="btn" id="toggleBtn">暂停</button>
+    <button class="btn" id="clearBtn">清空</button>
+  </div>
+</div>
+<script>
+  // 你可以在这里自定义情话内容
+  const messages = [
+    "想把全世界最可爱的都给你，其中包括我。",
+    "今天也要按计划喜欢你。",
+    "你一出现，其他人都成了背景。",
+    "月亮不会奔向你，但我会。",
+    "遇见你，是我所有小确幸的总和。",
+    "你的名字，是我见过最短的情诗。",
+    "想把一切温柔都给你。",
+    "我已经见过银河，但只想围着你转。",
+    "你的笑，溢出屏幕来到我心里。",
+    "今夜我心事很简单——想你。",
+    "你是我疲惫生活里的小确幸。",
+    "把烦恼关掉，只把你留在我心里。",
+    "世界再吵，我只听得见你。",
+    "答应我，做我宇宙里最亮的那颗星。",
+    "想和你慢慢变老，路灯为我们记日记。",
+    "我喜欢你，胜过昨天，略少于明天。",
+    "把喜欢写进风里，从此满世界都是你。",
+    "万物皆有裂隙，那是你照进来的光。",
+    "我的宇宙，为你常亮。",
+    "我在等风，也在等你。",
+    "愿你被温柔以待，而我刚好有很多。",
+    "你是我遥遥万里最牵挂的那一个。",
+    "靠近你，连月亮都悄悄变甜了。",
+    "我不想和别人比较，只想和你并肩。",
+    "如果你累了，就来我怀里吧。",
+    "想把永远两个字，送给你的每一天。",
+    "你是答案，也是全部理由。",
+    "想你的时候，月亮都笑成一弯。",
+    "和你在一起，连时间都变慢了。",
+    "你是我心里长驻的小太阳。"
+  ];
+
+  const badges = ["今日心动","限定温柔","来自爱意","请签收","甜蜜来信","悄悄喜欢你"];
+  const colors = ["#ffd1dc","#c9f0ff","#c2fbd7","#ffecb3","#e0d7ff","#ffcfdf","#d2fdbb","#d1f5ff","#ffe6c9","#f1f0ff"];
+
+  const wrap = document.getElementById('wrap');
+  const counter = document.getElementById('counter');
+  const intro = document.getElementById('intro');
+  const startBtn = document.getElementById('startBtn');
+  const toggleBtn = document.getElementById('toggleBtn');
+  const clearBtn = document.getElementById('clearBtn');
+
+  let timer = null;
+  let running = false;
+  let shown = 0;
+  let spawnInterval = 700; // 生成频率（毫秒），可以改
+  let life = 4200; // 每条存在时间（毫秒），可以改
+
+  function rand(min, max){ return Math.random() * (max - min) + min; }
+  function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+  function spawnOne(){
+    const card = document.createElement('div');
+    card.className = 'card';
+    if (Math.random()<0.35) card.classList.add('small');
+    card.style.setProperty('--rot', `${rand(-6,6)}deg`);
+    card.textContent = pick(messages);
+    card.style.left = '0px'; card.style.top = '0px';
+    card.style.background = '#fff';
+
+    // badge
+    if(Math.random()<0.6){
+      const b = document.createElement('div');
+      b.className = 'badge';
+      b.textContent = pick(badges);
+      b.style.setProperty('--badge', pick(colors));
+      card.appendChild(b);
+    }
+
+    wrap.appendChild(card);
+
+    // 放置在随机位置（避免溢出）
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const rect = card.getBoundingClientRect();
+    const x = rand(10, Math.max(10, vw - rect.width - 20));
+    const y = rand(10, Math.max(10, vh - rect.height - 20));
+    card.style.left = x + 'px';
+    card.style.top = y + 'px';
+
+    // 点击/触摸点亮爱心
+    card.addEventListener('pointerdown', (e)=>{
+      burstHearts(e.clientX, e.clientY);
+      card.style.animation = 'fadeOut .6s ease forwards';
+      setTimeout(()=> card.remove(), 500);
+    }, {passive:true});
+
+    shown++;
+    counter.textContent = `已出现 ${shown} 条情话`;
+
+    // 自动移除
+    setTimeout(()=>{
+      if(card.isConnected){
+        card.style.animation = 'fadeOut .9s ease forwards';
+        setTimeout(()=> card.remove(), 800);
+      }
+    }, life);
+  }
+
+  function burstHearts(x, y){
+    for(let i=0;i<6;i++){
+      const h = document.createElement('div');
+      h.className = 'heart';
+      h.style.left = x + 'px';
+      h.style.top = y + 'px';
+      h.style.background = pick(["#ff5d8f","#ff7aa2","#ff9ec1","#ff477e"]);
+      wrap.appendChild(h);
+      setTimeout(()=>h.remove(), 800);
+    }
+  }
+
+  function start(){
+    if(running) return;
+    running = true;
+    intro.style.display = 'none';
+    toggleBtn.textContent = '暂停';
+    timer = setInterval(spawnOne, spawnInterval);
+    // 初始撒几张
+    for(let i=0;i<6;i++) setTimeout(spawnOne, i*120);
+  }
+
+  function toggle(){
+    if(running){
+      clearInterval(timer); running = false; toggleBtn.textContent = '继续';
+    }else{
+      timer = setInterval(spawnOne, spawnInterval); running = true; toggleBtn.textContent = '暂停';
+    }
+  }
+
+  function clearAll(){
+    document.querySelectorAll('.card').forEach(el=>el.remove());
+  }
+
+  startBtn.addEventListener('click', start);
+  toggleBtn.addEventListener('click', toggle);
+  clearBtn.addEventListener('click', clearAll);
+
+  // 移动端轻触也可开始
+  window.addEventListener('touchstart', function autoStart(){
+    if(!running && intro.style.display !== 'none'){ start(); }
+    window.removeEventListener('touchstart', autoStart);
+  }, {passive:true});
+</script>
+</body>
+</html>
