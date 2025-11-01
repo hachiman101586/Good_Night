@@ -193,9 +193,6 @@
       setTimeout(()=> card.remove(), 500);
     }, {passive:true});
 
-    shown++;
-    counter.textContent = `已出现 ${shown} 条情话`;
-
     // 自动移除
     setTimeout(()=>{
       if(card.isConnected){
